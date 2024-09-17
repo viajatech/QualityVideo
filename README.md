@@ -1,6 +1,6 @@
 1.Selecciona el archivo de video de entrada
 
-2.Selecciona el modelo de super resolución (.pb) (EDSR_X4.PB) https://github.com/sanghyun-son/EDSR-PyTorch https://github.com/Saafke/EDSR_Tensorflow/blob/master/models/EDSR_x4.pb
+2.Selecciona el modelo de super resolución (.pb) (EDSR_X4.PB) https://github.com/sanghyun-son/EDSR-PyTorch https://github.com/Saafke/EDSR_Tensorflow/blob/master/models/EDSR_x4.pb (36.8 MB)
 
 3.Selecciona la carpeta de salida
 
