@@ -1,0 +1,146 @@
+#pip install opencv-python
+#pip install opencv-contrib-python
+#pip install tkinter
+
+
+
+import cv2
+import os
+import threading
+import tkinter as tk
+from tkinter import filedialog, ttk, messagebox
+
+def process_video():
+    input_path = input_file.get()
+    output_folder_path = output_folder.get()
+    resolution = resolution_var.get()
+    orientation = orientation_var.get()
+    output_format = format_var.get()
+    model_path = model_file.get()
+
+    if not input_path or not output_folder_path or not model_path:
+        messagebox.showerror("Error", "Por favor, completa todos los campos necesarios.")
+        return
+
+    try:
+        # Crear objeto de superresolución
+        sr = cv2.dnn_superres.DnnSuperResImpl_create()
+        sr.readModel(model_path)
+        sr.setModel("edsr", 4)  # Usamos EDSR con factor x4
+
+        # Abrir video de entrada
+        cap = cv2.VideoCapture(input_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        # Ajustar resolución si se eligió Full HD o 4K
+        if resolution == "Full HD":
+            target_width, target_height = 1920, 1080
+        elif resolution == "4K":
+            target_width, target_height = 3840, 2160
+        else:
+            target_width, target_height = width, height
+
+        # Ajustar orientación si es necesario
+        if orientation == "Vertical":
+            target_width, target_height = target_height, target_width
+
+        # Obtener nombre de archivo de salida
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        output_path = os.path.join(output_folder_path, f"{base_name}_enhanced.{output_format}")
+
+        # Configurar el escritor de video
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') if output_format == 'mp4' else cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (target_width, target_height))
+
+        progress['maximum'] = frame_count
+        frame_number = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Aplicar superresolución
+            result = sr.upsample(frame)
+
+            # Redimensionar al tamaño objetivo si es necesario
+            result = cv2.resize(result, (target_width, target_height), interpolation=cv2.INTER_CUBIC)
+
+            # Rotar si es vertical
+            if orientation == "Vertical":
+                result = cv2.rotate(result, cv2.ROTATE_90_CLOCKWISE)
+
+            # Escribir el frame procesado
+            out.write(result)
+
+            frame_number += 1
+            progress['value'] = frame_number
+            root.update_idletasks()
+
+        # Liberar recursos
+        cap.release()
+        out.release()
+
+        messagebox.showinfo("Completado", f"Video procesado guardado en:\n{output_path}")
+
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+def start_processing():
+    threading.Thread(target=process_video).start()
+
+def select_input_file():
+    file_path = filedialog.askopenfilename(title="Selecciona un video de entrada", filetypes=[("Videos", "*.mp4;*.avi;*.mov;*.mkv")])
+    input_file.set(file_path)
+
+def select_output_folder():
+    folder_path = filedialog.askdirectory(title="Selecciona la carpeta de salida")
+    output_folder.set(folder_path)
+
+def select_model_file():
+    file_path = filedialog.askopenfilename(title="Selecciona el modelo de superresolución (.pb)", filetypes=[("Modelos", "*.pb")])
+    model_file.set(file_path)
+
+# Configuración de la ventana principal
+root = tk.Tk()
+root.title("Quality Video by Viaja Tech")
+
+# Variables
+input_file = tk.StringVar()
+output_folder = tk.StringVar()
+resolution_var = tk.StringVar(value="Full HD")
+orientation_var = tk.StringVar(value="Horizontal")
+format_var = tk.StringVar(value="mp4")
+model_file = tk.StringVar()
+
+# Diseño de la interfaz
+ttk.Label(root, text="Archivo de video de entrada:").grid(row=0, column=0, padx=5, pady=5, sticky='e')
+ttk.Entry(root, textvariable=input_file, width=50).grid(row=0, column=1, padx=5, pady=5)
+ttk.Button(root, text="Seleccionar", command=select_input_file).grid(row=0, column=2, padx=5, pady=5)
+
+ttk.Label(root, text="Modelo de superresolución (.pb):").grid(row=1, column=0, padx=5, pady=5, sticky='e')
+ttk.Entry(root, textvariable=model_file, width=50).grid(row=1, column=1, padx=5, pady=5)
+ttk.Button(root, text="Seleccionar", command=select_model_file).grid(row=1, column=2, padx=5, pady=5)
+
+ttk.Label(root, text="Carpeta de salida:").grid(row=2, column=0, padx=5, pady=5, sticky='e')
+ttk.Entry(root, textvariable=output_folder, width=50).grid(row=2, column=1, padx=5, pady=5)
+ttk.Button(root, text="Seleccionar", command=select_output_folder).grid(row=2, column=2, padx=5, pady=5)
+
+ttk.Label(root, text="Resolución de salida:").grid(row=3, column=0, padx=5, pady=5, sticky='e')
+ttk.OptionMenu(root, resolution_var, "Full HD", "4K").grid(row=3, column=1, padx=5, pady=5, sticky='w')
+
+ttk.Label(root, text="Orientación de salida:").grid(row=4, column=0, padx=5, pady=5, sticky='e')
+ttk.OptionMenu(root, orientation_var, "Horizontal", "Vertical").grid(row=4, column=1, padx=5, pady=5, sticky='w')
+
+ttk.Label(root, text="Formato de salida:").grid(row=5, column=0, padx=5, pady=5, sticky='e')
+ttk.OptionMenu(root, format_var, "mp4", "avi", "mov", "mkv").grid(row=5, column=1, padx=5, pady=5, sticky='w')
+
+ttk.Button(root, text="Iniciar procesamiento", command=start_processing).grid(row=6, column=1, padx=5, pady=20)
+
+progress = ttk.Progressbar(root, orient='horizontal', length=400, mode='determinate')
+progress.grid(row=7, column=0, columnspan=3, padx=5, pady=5)
+
+root.mainloop()
