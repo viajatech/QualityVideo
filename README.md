@@ -12,3 +12,5 @@
 
 -----------
 ![](https://github.com/viajatech/QualityVideo/blob/main/Quality%20Video%20GUI%20GPU.png)
+-----------
+Selecciona el script que requieras hay uno para GPU y otro para CPU
