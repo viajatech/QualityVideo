@@ -1,6 +1,6 @@
 1.Selecciona el archivo de video de entrada
 
-2.Selecciona el modelo de super resolución (.pb) (EDSR_X4.PB)
+2.Selecciona el modelo de super resolución (.pb) (EDSR_X4.PB) https://github.com/sanghyun-son/EDSR-PyTorch
 
 3.Selecciona la carpeta de salida
 
